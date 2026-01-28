@@ -1,11 +1,12 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyDJl7afYTygLXJb99yZ4NN4X-7Eju-_HrQ",
+  apiKey: import.meta.env.VITE_FIREBASE_APIKEY,
   authDomain: "vingo-food-delvery.firebaseapp.com",
   projectId: "vingo-food-delvery",
   storageBucket: "vingo-food-delvery.firebasestorage.app",
@@ -15,3 +16,5 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app)
+export{app,auth}

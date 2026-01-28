@@ -3,43 +3,63 @@ import bcrypt from "bcryptjs"
 import genToken from "../utils/token.js"
 import { sendOtpMail } from "../utils/mail.js"
 
-export const signUp=async (req,res)=>{
-    try {
-        const {fullName,email,password,mobile,role}=req.body
-        //user find using email
-        let user= await User.findOne({email})
-        if(user){
-            return res.status(400).json({message:"User already exist."})
-        }
-        if(password.length < 6){
-            return res.status(400).json({message:"password must be at least 6 charaters."})
-        }
-        if(mobile.length < 10){
-            return res.status(400).json({message:"mobile  no must be at least 10 digits."})
-        }
+export const signUp = async (req, res) => {
+  try {
+    const { fullName, email, password, mobile, role } = req.body;
 
-        const hashedPassword= await bcrypt.hash(password,10)
-        user= await User.create({
-            fullName,
-            email,
-            role,
-            mobile,
-            password:hashedPassword
-        })
-
-        const token = await genToken(user._id)
-        res.cookie("token",token,{
-            secure:false,
-            sameSite:"strict",
-            maxAge:7*24*60*60*1000,
-            httpOnly:true
-        })
-
-        return res.status(201).json(user)
-    } catch (error) {
-        return res.status(500).json(`sign up error ${error} ` )
+    // 1️⃣ Required fields check
+    if (!fullName || !email || !password || !mobile) {
+      return res.status(400).json({ message: "All fields are required" });
     }
-}
+
+    // 2️⃣ Password validation
+    if (password.length < 6) {
+      return res
+        .status(400)
+        .json({ message: "Password must be at least 6 characters" });
+    }
+
+    // 3️⃣ Mobile validation
+    if (mobile.length < 10) {
+      return res
+        .status(400)
+        .json({ message: "Mobile number must be at least 10 digits" });
+    }
+
+    // 4️⃣ Check existing user
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "User already exists" });
+    }
+
+    // 5️⃣ Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // 6️⃣ Create user
+    const user = await User.create({
+      fullName,
+      email,
+      role,
+      mobile,
+      password: hashedPassword,
+    });
+
+    // 7️⃣ Generate token
+    const token = await genToken(user._id);
+    res.cookie("token", token, {
+      secure: false,
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      httpOnly: true,
+    });
+
+    return res.status(201).json(user);
+  } catch (error) {
+    console.error("Signup error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 
 export const signIn=async (req,res)=>{
     try {
@@ -134,5 +154,28 @@ const user = await User.findOne({ email });
 
     } catch (error) {
         return res.status(500).json(`reset password error ${error}`)
+    }
+}
+
+export const googleAuth = async (req,res)=>{
+    try {
+        const {fullName,email,mobile,role} = req.body
+        let user=await User.findOne({email})
+        if(!user){
+            user=await User.create({
+                fullName,email,mobile,role
+            })
+        }
+         const token = await genToken(user._id)
+        res.cookie("token",token,{
+            secure:false,
+            sameSite:"strict",
+            maxAge:7*24*60*60*1000,
+            httpOnly:true
+        })
+
+        return res.status(200).json(user)
+    } catch (error) {
+        return res.status(500).json(`googleAuth error ${error}`)
     }
 }

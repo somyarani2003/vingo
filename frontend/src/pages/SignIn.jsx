@@ -3,8 +3,11 @@ import { FaRegEye } from "react-icons/fa";
 import { FaRegEyeSlash } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import { useNavigate } from "react-router-dom";
-import axios from 'axios'
+import axios from "axios";
 import { serverUrl } from "../App";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { auth } from "../../firebase";
+import { ClipLoader } from "react-spinners"
 
 function SignIn() {
   const primaryColor = "#ff4d2d";
@@ -12,25 +15,56 @@ function SignIn() {
   const bgColor = "#fff9f6";
   const borderColor = "#ddd";
   const [showPassword, setshowPassword] = useState(false);
-  
-  const navigate = useNavigate()
-  
-  const [email,setEmail] = useState("")
-  const [password,setPassword] = useState("")
-  
 
-  const handleSignIn = async () =>{
+  const navigate = useNavigate();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [err, setErr] = useState("");
+const [loading,setLoading] = useState(false);
+  const handleSignIn = async () => {
+    if (!email.trim()) {
+      return alert("Email is required");
+    }
+
+    if (!password.trim()) {
+      return alert("Password is required");
+    }
+    setLoading(true)
     try {
-      const result = await axios.post(`${serverUrl}/api/auth/signin`,{
-       email,password
-      },{withCredentials:true})
+      const result = await axios.post(
+        `${serverUrl}/api/auth/signin`,
+        {
+          email,
+          password,
+        },
+        { withCredentials: true },
+      );
       console.log(result);
-      
+      setErr("");
+      setLoading(false)
+    } catch (error) {
+      setErr(error?.response?.data?.message);
+      setLoading(false)
+    }
+  };
+
+  const handleGoogleAuth = async () => {
+    const provider = new GoogleAuthProvider();
+    const result = await signInWithPopup(auth, provider);
+    try {
+      const { data } = await axios.post(
+        `${serverUrl}/api/auth/google-auth`,
+        {
+          email: result.user.email,
+        },
+        { withCredentials: true },
+      );
+      console.log(data);
     } catch (error) {
       console.log(error);
-      
     }
-  }
+  };
   return (
     <div
       className="min-h-screen w-full flex items-center justify-center 
@@ -51,10 +85,10 @@ function SignIn() {
           Vingo
         </h1>
         <p className="text-gray-600 mb-8">
-          Sign In to your account to get started with delicious food deliveries{" "}
+          Sign In to your account to get started with delicious food
+          deliveries{" "}
         </p>
 
-      
         {/*email */}
         <div className="mb-4">
           <label
@@ -69,12 +103,12 @@ function SignIn() {
             className="w-full border rounded-lg px-3 py-2 focus:outline-none"
             placeholder="Enter your Email"
             style={{ border: `1px solid ${borderColor}` }}
-            onChange={(e) =>setEmail(e.target.value)}
-             value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            value={email}
+            required
           />
         </div>
 
-       
         {/*password */}
         <div className="mb-4">
           <label
@@ -90,8 +124,9 @@ function SignIn() {
               className="w-full border rounded-lg px-3 py-2 focus:outline-none"
               placeholder="Enter your Password"
               style={{ border: `1px solid ${borderColor}` }}
-              onChange={(e) =>setPassword(e.target.value)}
-             value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              value={password}
+              required
             />
             <button
               className="absolute right-3 cursor-pointer top-3.5 text-gray-500"
@@ -101,24 +136,38 @@ function SignIn() {
             </button>
           </div>
         </div>
-        <div className="text-right mb-4 text-[#ff4d2d] font-medium cursor-pointer"
-        onClick={()=>navigate("/forgot-password")}>
+        <div
+          className="text-right mb-4 text-[#ff4d2d] font-medium cursor-pointer"
+          onClick={() => navigate("/forgot-password")}
+        >
           Forgot Password
         </div>
 
-       
-        <button className={`w-full font-semibold 
+        <button
+          className={`w-full font-semibold 
         rounded-lg py-2 transition cursor-pointer duration-200
-         bg-[#ff4d2d] text-white hover:bg-[#e64323] `} 
-         onClick={handleSignIn}
-       >Sign In</button>
-
-       <button className="w-full mt-4 flex items-center justify-center cursor-pointer
-       gap-2 border border-gray-400 rounded-lg px-4 py-2 transition duration-200 hover:bg-gray-100">
-        <FcGoogle size={20} />
-        <span>Sign In with Google</span>
+         bg-[#ff4d2d] text-white hover:bg-[#e64323] `}
+          onClick={handleSignIn}
+        disabled={loading}
+               >{loading ? <ClipLoader size={20} color="white"/>:"Sign In"}
+          
         </button>
-        <p className="text-center cursor-pointer mt-6" onClick={()=>navigate("/signup")}>Want to create a new account ? <span className="text-[#ff4d2d]">Sign Up</span></p>
+        {err && <p className="text-red-500 text-center my-2.5 ">*{err}</p>}
+        <button
+          className="w-full mt-4 flex items-center justify-center cursor-pointer
+       gap-2 border border-gray-400 rounded-lg px-4 py-2 transition duration-200 hover:bg-gray-100"
+          onClick={handleGoogleAuth}
+        >
+          <FcGoogle size={20} />
+          <span>Sign In with Google</span>
+        </button>
+        <p
+          className="text-center cursor-pointer mt-6"
+          onClick={() => navigate("/signup")}
+        >
+          Want to create a new account ?{" "}
+          <span className="text-[#ff4d2d]">Sign Up</span>
+        </p>
       </div>
     </div>
   );

@@ -5,7 +5,9 @@ import { FcGoogle } from "react-icons/fc";
 import { useNavigate } from "react-router-dom";
 import axios from 'axios'
 import { serverUrl } from "../App";
-
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { auth } from "../../firebase";
+import { ClipLoader } from "react-spinners"
 function SignUp() {
   const primaryColor = "#ff4d2d";
   const hoverColor = "#e64323";
@@ -18,18 +20,57 @@ function SignUp() {
   const [email,setEmail] = useState("")
   const [password,setPassword] = useState("")
   const [mobile,setMobile] = useState("")
+  const [err,setErr] =useState("")
+  const [loading,setLoading] = useState(false);
 
   const handleSignUp = async () =>{
+    if (!fullName.trim()) return setErr("Full name is required");
+  if (!email.trim()) return setErr("Email is required");
+  if (!password.trim()) return setErr("Password is required");
+  if (!mobile.trim()) return setErr("Mobile number is required");
+
+  if (password.length < 6) {
+    return setErr("Password must be at least 6 characters");
+  }
+
+  if (mobile.length !== 10) {
+    return setErr("Mobile number must be 10 digits");
+  }
+  setLoading(true)
     try {
       const result = await axios.post(`${serverUrl}/api/auth/signup`,{
         fullName,email,password,mobile,role
       },{withCredentials:true})
       console.log(result);
+      setErr("")
+      setLoading(false)
+    } catch (error) {
+      setErr(error?.response?.data?.message)
+      
+    }
+  }
+
+  const handleGoogleAuth =async () =>{
+    if(!mobile){
+      return setErr("moile no is required")      
+    }
+    const provider = new GoogleAuthProvider()
+    const result= await signInWithPopup(auth,provider)
+    try {
+      const {data}=await axios.post(`${serverUrl}/api/auth/google-auth`,{
+        fullName:result.user.displayName,
+        email:result.user.email,
+        role,
+        mobile
+      },{withCredentials:true})
+      console.log(data);
       
     } catch (error) {
       console.log(error);
       
     }
+    
+
   }
   return (
     <div
@@ -69,7 +110,7 @@ function SignUp() {
             placeholder="Enter your Full Name"
             style={{ border: `1px solid ${borderColor}` }}
              onChange={(e) =>setFullName(e.target.value)}
-             value={fullName}
+             value={fullName} required
           />
         </div>
 
@@ -88,7 +129,7 @@ function SignUp() {
             placeholder="Enter your Email"
             style={{ border: `1px solid ${borderColor}` }}
             onChange={(e) =>setEmail(e.target.value)}
-             value={email}
+             value={email} required
           />
         </div>
 
@@ -107,7 +148,7 @@ function SignUp() {
             placeholder="Enter your Mobile Number"
             style={{ border: `1px solid ${borderColor}` }}
             onChange={(e) =>setMobile(e.target.value)}
-             value={mobile}
+             value={mobile} required
           />
         </div>
         {/*password */}
@@ -127,6 +168,8 @@ function SignUp() {
               style={{ border: `1px solid ${borderColor}` }}
               onChange={(e) =>setPassword(e.target.value)}
              value={password}
+             minLength={6}
+              required
             />
             <button
               className="absolute right-3 cursor-pointer top-3.5 text-gray-500"
@@ -171,11 +214,15 @@ function SignUp() {
         <button className={`w-full font-semibold 
         rounded-lg py-2 transition cursor-pointer duration-200
          bg-[#ff4d2d] text-white hover:bg-[#e64323] `} 
-         onClick={handleSignUp}
-       >Sign Up</button>
-
+         onClick={handleSignUp} disabled={loading}
+       >{loading ? <ClipLoader size={20} color="white"/>:"Sign Up"}
+        </button>
+{err &&
+       <p className="text-red-500 text-center my-2.5 ">*{err}</p>
+}
        <button className="w-full mt-4 flex items-center justify-center cursor-pointer
-       gap-2 border border-gray-400 rounded-lg px-4 py-2 transition duration-200 hover:bg-gray-100">
+       gap-2 border border-gray-400 rounded-lg px-4 py-2 transition duration-200 hover:bg-gray-100"
+       onClick={handleGoogleAuth}>
         <FcGoogle size={20} />
         <span>Sign up with Google</span>
         </button>
