@@ -8,6 +8,10 @@ import { serverUrl } from "../App";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "../../firebase";
 import { ClipLoader } from "react-spinners"
+import { useDispatch } from "react-redux";
+import { setUserData } from "../redux/userSlice";
+
+
 function SignUp() {
   const primaryColor = "#ff4d2d";
   const hoverColor = "#e64323";
@@ -22,9 +26,10 @@ function SignUp() {
   const [mobile,setMobile] = useState("")
   const [err,setErr] =useState("")
   const [loading,setLoading] = useState(false);
+  const dispatch = useDispatch()
 
-  const handleSignUp = async () =>{
-    if (!fullName.trim()) return setErr("Full name is required");
+ const handleSignUp = async () => {
+  if (!fullName.trim()) return setErr("Full name is required");
   if (!email.trim()) return setErr("Email is required");
   if (!password.trim()) return setErr("Password is required");
   if (!mobile.trim()) return setErr("Mobile number is required");
@@ -36,19 +41,25 @@ function SignUp() {
   if (mobile.length !== 10) {
     return setErr("Mobile number must be 10 digits");
   }
-  setLoading(true)
-    try {
-      const result = await axios.post(`${serverUrl}/api/auth/signup`,{
-        fullName,email,password,mobile,role
-      },{withCredentials:true})
-      console.log(result);
-      setErr("")
-      setLoading(false)
-    } catch (error) {
-      setErr(error?.response?.data?.message)
-      
-    }
+
+  setLoading(true);
+  try {
+    const result = await axios.post(
+      `${serverUrl}/api/auth/signup`,
+      { fullName, email, password,mobile,role },
+      { withCredentials: true }
+    );
+
+    dispatch(setUserData(result.data));
+    setErr("");
+    navigate("/signin");
+  } catch (error) {
+    setErr(error?.response?.data?.message || "Signup failed");
+  } finally {
+    setLoading(false);
   }
+};
+
 
   const handleGoogleAuth =async () =>{
     if(!mobile){
@@ -63,7 +74,7 @@ function SignUp() {
         role,
         mobile
       },{withCredentials:true})
-      console.log(data);
+      dispatch(setUserData(data))
       
     } catch (error) {
       console.log(error);

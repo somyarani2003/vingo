@@ -8,6 +8,8 @@ import { serverUrl } from "../App";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "../../firebase";
 import { ClipLoader } from "react-spinners"
+import { useDispatch } from "react-redux";
+
 
 function SignIn() {
   const primaryColor = "#ff4d2d";
@@ -15,13 +17,13 @@ function SignIn() {
   const bgColor = "#fff9f6";
   const borderColor = "#ddd";
   const [showPassword, setshowPassword] = useState(false);
-
   const navigate = useNavigate();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
 const [loading,setLoading] = useState(false);
+  const dispatch = useDispatch()
+
   const handleSignIn = async () => {
     if (!email.trim()) {
       return alert("Email is required");
@@ -40,7 +42,7 @@ const [loading,setLoading] = useState(false);
         },
         { withCredentials: true },
       );
-      console.log(result);
+      dispatch(setUserData(result.data))
       setErr("");
       setLoading(false)
     } catch (error) {
@@ -60,7 +62,7 @@ const [loading,setLoading] = useState(false);
         },
         { withCredentials: true },
       );
-      console.log(data);
+      dispatch(setUserData(data))
     } catch (error) {
       console.log(error);
     }
